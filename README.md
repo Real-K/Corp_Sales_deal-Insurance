@@ -1,195 +1,96 @@
-# Superwork World Starter — Bootcamp Homework Edition
+# 숙제 요약: gfc-corporate-deal
 
-> **Build the World. Run the World. Try to break the World. Fix the World before the real world does.**
+생명보험사 법인영업 컨설턴트(GFC)의 법인 딜 하나가 업무 A→E를 지나는 과정을 Superwork World(`superwork.world/v1`)로 모델링했다. 모든 법인·담당자·금액은 예시 값이다.
 
-**Educational Use Only · Source-available · Not Open Source** — Copyright © 2026 Josh Lee. All rights reserved. ([라이선스](#라이선스와-소유권))
+- mission: 법인 한 곳의 딜을 초회 미팅 준비부터 제안 설계안의 시스템 등록까지, 업무 사이 인계를 빠뜨리지 않고 진행한다.
+- 검증: `npm run validate` → Entity 5 · State 10 · Transition 11 · Constraint 12 · Warnings 0 · READY FOR STUDIO IMPORT ✓
 
-이 저장소에서 여러분은 **자신의 업무 하나를 World(실행 가능한 세계)로 모델링**하고,
-그 World를 스스로 깨뜨려 보고, 고치고, 무엇을 왜 그렇게 결정했는지 기록합니다.
+## 왜 딜 전체를 World로 만들었나
 
-- 필요한 것: Node.js 18+, Git, (선택) Claude Code 같은 코딩 에이전트
-- 필요 없는 것: Superwork 계정, 로그인, 초대, Studio 접근 — **이 숙제는 전부 로컬에서 완료됩니다.**
+원래 하네스는 업무 A\~E를 각각 독립된 프로젝트(업무별 명세·장부)로 만들고, 허브가 장부를 읽어 딜 단위로 묶어 보여 준다. 업무 안의 순서는 커널이 막지만, 업무 사이의 순서는 건을 여는 사람과 적재 프로그램에 맡겨져 있고 딜의 단계는 기록되지 않는 계산값이다. 이 World는 그 빈 곳을 다룬다. 딜을 주인공 상태기계로 두어 업무 사이 순서를 State 흐름으로 강제하고, 업무를 넘나드는 규칙(확정된 보고서 판을 근거로 설계했는가 등)을 Constraint로 선언했다. 대가로 업무 안의 세부 통제(자기 채점 금지, 주장 라벨, 검사한 판 묶기)는 이 World에서 다루지 않는다.
 
-수업에서는 강사가 Superwork Studio로 같은 과정을 시연합니다. 여러분은 그 과정을
-**직접 생각하며** 이 저장소에서 따라 합니다.
+## ESTC
 
-> **제출 마감: 2026-10-04 23:59 KST** (October 4, 2026, 11:59 PM Korea Standard Time)
+**Entity:** 주인공 `Deal`(상태기계)과 상태 없는 산출물 4개. 산출물은 판 번호를 담아 판 대조 규칙을 식으로 쓰기 위해 둔다(결정 2).
 
-> **⚠️ 민감정보 주의**
-> 실제 업무를 모델링해도 좋지만 회사 기밀, 고객 개인정보, API Key, 계정정보, 내부 시스템 주소 등 민감정보를 저장소에 올리지 마세요.
-> 회사명·고객명·사람 이름·금액·식별정보 등은 필요하면 익명화하거나 예시 데이터로 바꾸세요.
-> 비밀값(secret)이나 계정 정보(credential)는 커밋하지 말고, 공유 권한이 없는 회사 문서는 포함하지 마세요.
-> ZIP으로 제출하더라도 공유 권한이 없는 정보를 넣어도 된다는 뜻은 아닙니다.
-
----
-
-## 0. 시작하기 (10분)
-
-```bash
-git clone https://github.com/swit001/superwork-starter.git && cd superwork-starter
-npm install
-npm run validate          # 템플릿 상태 그대로 통과해야 정상입니다
-```
-
-제출은 GitHub 저장소 URL(기본) 또는 저장소 ZIP(대체)으로 합니다 — [제출 체크리스트](#5-제출-체크리스트) 참고.
-GitHub로 제출하려면 이 저장소를 여러분의 계정으로 가져가세요 (Fork 또는 새 저장소로 push).
-
----
-
-## 1. 숙제의 흐름
-
-```
-CHOOSE → MODEL → VALIDATE → RUN → BREAK → FIX → RE-RUN → REFLECT → SUBMIT
-```
-
-| 단계 | 여러분이 하는 일 | 결과물 |
+| Entity | 업무 | 규칙이 읽는 값 |
 |---|---|---|
-| **CHOOSE** | World로 만들 업무 하나를 고르고, World Model이 필요한 이유를 씁니다 | `assignment/world-fit.md` |
-| **MODEL** | Entity · State · Transition · Constraint(ESTC)를 결정하고 `world.yaml`에 선언합니다 | `world.yaml`, `assignment/entity-decisions.md`, `assignment/modeling-decisions.md` |
-| **VALIDATE** | `npm run validate` 로 World가 규격에 맞는지 확인합니다 | `evidence/` |
-| **RUN** | 정상 시나리오 하나를 쓰고, `world.yaml`을 보며 손으로 판정(desk-check)합니다 | `scenarios/happy-path.yaml` |
-| **BREAK** | World를 깨뜨릴 공격 시나리오 하나를 쓰고 판정합니다 | `scenarios/adversarial.yaml`, `assignment/break-fix.md` |
-| **FIX** | 발견한 설계 빈틈을 **World 규칙을 바꿔서** 고칩니다 | `world.yaml`, `assignment/break-fix.md` |
-| **RE-RUN** | 다시 validate하고, 같은 시나리오의 결과를 다시 판정합니다 | `assignment/break-fix.md`, `evidence/` |
-| **REFLECT** | 배운 것을 짧게 씁니다 | `assignment/reflection.md` |
-| **SUBMIT** | GitHub 저장소 URL(또는 ZIP)을 제출합니다 | 아래 체크리스트 |
+| `Deal` | 딜 | corp, gfc, dept_head, meeting_held, opinions_expected/received |
+| `AnalysisReport` | A 기업분석보고서 | corp |
+| `ExpertRequest` | C 1차 진단·배정안·배정 요청 | version, approved_version, experts |
+| `CEOReport` | D CEO 종합보고서 | version, confirmed_version, conflicts, resolution |
+| `ProposalDesign` | E 제안 설계안 | report_version, premium_total(연 환산 보험료 합계, 원) |
 
-자세한 과제 요건: [`assignment/README.md`](assignment/README.md)
+**State와 Transition:**
 
----
-
-## 2. 명령어
-
-```bash
-npm run validate      # World 규격 검사 — 문제가 있으면 어디가 왜 틀렸고 어떻게 고치는지 알려줍니다
-npm run summary       # 요약 + 마지막 줄 READY FOR STUDIO IMPORT ✓
-npm run evidence      # 요약 결과를 evidence/validate-summary.txt 로 저장 (제출 증거)
-npx superwork explain <topic>   # DSL 도움말 (states | transitions | constraints | expressions)
+```
+opened ─draft_analysis(agent)→ analysis_drafted ─confirm_prep(gfc)→ prep_confirmed          [A]
+       ─receive_followup(gfc)→ followup_received                                             [B]
+       ─approve_diagnosis(gfc)→ diagnosis_approved ─send_expert_request(system, 외부·비가역)→ experts_requested   [C]
+       ─draft_report(agent)→ report_drafted ─confirm_report(gfc)→ report_confirmed            [D]
+                              report_drafted ─return_report(gfc)→ experts_requested (반려)
+       ─confirm_proposal(gfc, 기준액 이하) 또는 approve_proposal_over_limit(dept_head, 기준액 초과)→ proposal_confirmed
+       ─register_proposal(system, 외부·가역)→ registered (terminal)                            [E]
 ```
 
-### validate가 확인하는 것
-- `world.yaml`이 `superwork.world/v1` 규격에 맞는지 (구조 · 참조 · transition · constraint 표현식 문법)
-- 선언한 상태 · 역할 · 제약이 서로 올바르게 연결되어 있는지
+**Constraint 12개:**
 
-### validate가 증명하지 **않는** 것
-- 여러분의 업무 규칙이 **옳은지** — 셀프 승인을 막는 규칙이 빠져 있어도 World는 "valid"입니다.
-- **규격에 맞는 World도 나쁜 업무 설계일 수 있습니다.** 그래서 BREAK 단계가 있습니다.
+| ID | 붙는 전이 | 규칙 |
+|---|---|---|
+| C1 | A·B·C·D 확정, 반려, E 확정 | 그 딜의 담당 GFC만 확정·승인·반려한다 |
+| C2 | receive_followup | 초회 미팅 기록 없이 후속 단계를 열 수 없다 |
+| C3 | send_expert_request | 승인한 판과 지금 배정안의 판이 같아야 발송한다 |
+| C4 | send_expert_request | 배정 전문가가 비어 있으면 발송할 수 없다 |
+| C6 | draft_report | 받아야 할 전문가 의견이 다 와야 보고서를 쓴다 |
+| C7 | confirm_report | 의견 충돌이 있으면 조정 근거가 있어야 확정한다 |
+| C8 | E 확정 두 경로 | 설계안은 확정된 CEO 보고서 판을 근거로 해야 한다 |
+| C9 | confirm_proposal | 기준액(예시 1억 원) 초과면 부서장 결재로 안내한다 |
+| C10 | confirm_prep | 분석 보고서의 법인이 딜의 법인과 같아야 한다 |
+| C11 | approve_proposal_over_limit | 부서장 경로는 기준액 초과 건에만 열린다 |
+| C12 | approve_proposal_over_limit | 그 딜의 부서장만 결재한다 |
+| C13 | E 확정 두 경로 | 확정 뒤 CEO 보고서가 바뀌었으면 다시 확정받아야 한다 |
 
-### RUN은 어떻게 하나요?
-이 저장소에는 실행 엔진이 없습니다. 여러분은 각 시나리오를 `world.yaml`을 보며
-**손으로 판정(desk-check)** 하고 예상 결과(ALLOW/DENY)와 이유를 기록합니다.
-제출 후 리뷰에서는 강사가 여러분의 저장소를 Superwork Studio로 가져와
-**같은 시나리오를 실제 Runtime으로 실행**하고, 여러분의 예측과 실제 결과를 함께 비교합니다.
-판정 방법: [`scenarios/README.md`](scenarios/README.md)
+## 시나리오와 예측
 
----
+판정은 실행 엔진 없이 `world.yaml`·`seed.yaml`로 손으로 판정(desk-check)한 예측이다. because에는 guard 전부의 참·거짓과 실패 목록을 적어, guard 평가 방식과 관계없이 판정이 하나로 정해지게 했다.
 
-## 3. 저장소 구조
+| 파일 | 레코드 | 시도 | 예측 |
+|---|---|---|---|
+| `scenarios/happy-path.yaml` | D-1001 | opened → registered 9단계 | 모두 ALLOW |
+| `scenarios/adversarial.yaml` | D-2001 | 보고서 확정 전에 설계안 확정 | DENY (상태) |
+| `scenarios/adversarial-stale-report-version.yaml` | D-2002 | 확정본이 아닌 판을 근거로 한 설계안 확정 | DENY (C8) |
+| `scenarios/adversarial-head-bypass.yaml` | D-2003 | 기준액 이하 설계안을 부서장 경로로 확정 | DENY (C11) |
+| `scenarios/adversarial-other-dept-head.yaml` | D-2004 | 다른 부서장 결재 / 그 딜의 부서장 결재 | DENY (C12) / ALLOW |
+| `scenarios/adversarial-revised-report.yaml` | D-2005 | 확정 뒤 고쳐진 판을 근거로 한 설계안 확정 | DENY (C8, C13) |
+| `scenarios/adversarial-report-changed-after-confirm.yaml` | D-2006 | 확정 뒤 보고서가 바뀐 상태에서 설계안 확정 | DENY (C13) |
 
-```text
-world.yaml                  여러분의 World (루트에 있어야 합니다 — 위치를 옮기지 마세요)
-seed.yaml                   시나리오의 시작 상태가 되는 샘플 레코드
-scenarios/
-  README.md                 시나리오 형식과 desk-check 방법
-  happy-path.yaml           정상 시나리오
-  adversarial.yaml          공격(Break) 시나리오
-assignment/
-  README.md                 과제 요건
-  world-fit.md              왜 World Model이 필요한가
-  entity-decisions.md       개념 → 분류 → 이유
-  modeling-decisions.md     애매했던 모델링 결정
-  break-fix.md              BEFORE → FIX → AFTER
-  reflection.md             회고
-  claude-code-prompt.md     코딩 에이전트와 함께 할 때
-evidence/
-  README.md                 제출할 증거
-docs/                       개념 · 도메인 예시 · DSL 레퍼런스
-AGENTS.md                   코딩 에이전트의 작업 규칙
-.superwork/schema-version   언어 버전 (수정하지 마세요)
-```
+## BREAK → FIX
 
----
+| | BREAK | BEFORE | FIX | AFTER |
+|---|---|---|---|---|
+| 1 | 기준액 이하 설계안을 부서장 경로로 확정해 담당 GFC 확정(C1)과 기준액 검사(C9)를 건너뜀 | ALLOW | C11 기준액 초과만, C12 그 딜의 부서장만 | DENY (C11) |
+| 2 | C8이 확정한 판이 아닌 현재 판과 비교해, 확정 뒤 고쳐진 보고서를 근거로 한 설계안이 통과 | ALLOW | `confirmed_version` 추가, C8 식 변경, C13 추가 | DENY (C8, C13) |
 
-## 4. 코딩 에이전트와 함께
+두 FIX 모두 수정 전과 후의 validate가 똑같이 READY였다. 빈틈은 desk-check로만 드러났다. 증거: `evidence/validate-before.txt`, `evidence/validate-after.txt`.
 
-Claude Code 등을 써도 좋습니다. 단, **결정은 여러분이 합니다.**
-에이전트가 답을 먼저 쓰지 않고 여러분에게 묻도록 하는 시작 프롬프트:
-[`assignment/claude-code-prompt.md`](assignment/claude-code-prompt.md).
-에이전트는 `AGENTS.md`의 규칙을 따릅니다.
+## 알려진 한계
 
----
+- 같은 법인에 딜이 두 개 열리면 각 딜이 배정 요청을 한 번씩, 모두 두 번 발송한다. v1의 식은 다른 레코드를 조회할 수 없고 딜을 여는 전이도 없어서 규칙으로 막지 못한다. 되돌릴 수 없는 외부 효과라 운영 전에 풀어야 한다.
+- v1의 전이는 값을 쓰지 않는다. `confirmed_version`·`approved_version`은 확정 행위의 결과가 아니라 seed에서 들어오는 값이다(값의 주인).
+- 기준액 초과 설계안은 담당 GFC 확정 없이 부서장 혼자 확정한다(2단 결재 아님).
 
-## 5. 제출 체크리스트
+## 파일 안내
 
-> **⚠️ 민감정보 주의**
-> 실제 업무를 모델링해도 좋지만 회사 기밀, 고객 개인정보, API Key, 계정정보, 내부 시스템 주소 등 민감정보를 저장소에 올리지 마세요.
-> 회사명·고객명·사람 이름·금액·식별정보 등은 필요하면 익명화하거나 예시 데이터로 바꾸세요.
-> 비밀값(secret)이나 계정 정보(credential)는 커밋하지 말고, 공유 권한이 없는 회사 문서는 포함하지 마세요.
-> ZIP으로 제출하더라도 공유 권한이 없는 정보를 넣어도 된다는 뜻은 아닙니다.
-
-
-- [ ] `world.yaml` — 여러분의 World (`npm run validate` 통과)
-- [ ] `assignment/world-fit.md` — World Model이 필요한 이유 3–6문장
-- [ ] `assignment/entity-decisions.md` — 최종 Entity 3개 이상, Entity가 **아닌** 개념 2개 이상, 각각 이유
-- [ ] `assignment/modeling-decisions.md` — 애매했던 결정 2개 이상 (대안 · 선택 · 이유 · ESTC 영향)
-- [ ] `scenarios/happy-path.yaml` — 정상 시나리오 1개 + 예상 판정과 이유
-- [ ] `scenarios/adversarial.yaml` — 공격 시나리오 1개 + 예상 판정과 이유
-- [ ] `assignment/break-fix.md` — 발견한 설계 빈틈(또는 이미 막혀 있던 실패) · 수정 · 같은 시나리오 재판정
-- [ ] `evidence/` — 수정 전/후 validate 결과
-- [ ] `assignment/reflection.md` — 짧은 회고
-- [ ] 민감정보 없음 — 회사 기밀 · 고객 개인정보 · API Key · 계정정보 · 내부 시스템 주소가 없고, 필요한 부분은 익명화했다
-
-**제출 마감: 2026-10-04 23:59 KST** (October 4, 2026, 11:59 PM Korea Standard Time)
-
-**제출 방법**
-1. **기본:** GitHub 저장소 URL
-2. **대체:** 저장소 전체를 ZIP으로 압축해 제출 (`node_modules/` 제외)
-
-회사 정책, 기밀 내용, 고객 정보 때문에 작업을 공개할 수 없다면 GitHub URL 대신 ZIP으로 제출하세요.
-공개 GitHub 저장소, 강사 collaborator 초대, Superwork 로그인이나 제품 초대는 필요하지 않습니다.
-
-**제출 링크는 강사가 별도로 안내합니다.**
-
-**제출 시 동의 사항**
-
-과제를 제출하면 부트캠프 운영과 피드백 제공을 위해 제출된 저장소 또는 ZIP을 검토하고, 비공개 Superwork Studio 환경에 가져와 검증·실행·테스트·분석하며, 1:1 리뷰 세션에서 참가자와 함께 화면에 표시하고 논의하는 것에 동의한 것으로 봅니다. 이러한 사용은 과제 피드백 및 리뷰 제공을 위한 것이며, 참가자가 작성한 원본 과제의 소유권은 참가자에게 유지됩니다.
-
-또한 제출 내용에서 회사명, 고객명, 개인 식별정보 등을 제거하고 충분히 익명화·일반화하여 참가자, 소속 회사, 고객 또는 개인을 합리적으로 특정할 수 없는 형태의 World Pattern, 구조, 예시, 통계 및 학습 내용을 Superwork 제품 개선, 교육, 연구 및 Superwork Library 구축에 활용할 수 있습니다.
-
-제출된 원본 과제를 그대로 공개 배포하지는 않습니다. 자세한 조건: [`LICENSE`](LICENSE) 7조.
+| 파일 | 내용 |
+|---|---|
+| `world.yaml` | World 정의. 머리말에 값과 식의 해석 약속, 속성마다 뜻·단위·쓰는 주체 |
+| `seed.yaml` | 딜 7개와 산출물 28개, 모두 35개 레코드 (선언 속성 완비) |
+| `assignment/world-fit.md` | World Model이 필요한 이유 (7문항과 결론) |
+| `assignment/entity-decisions.md` | 후보 개념 25개의 분류와 이유, 업무 범위 그림 |
+| `assignment/modeling-decisions.md` | 애매한 결정 4개 (딜 World, 산출물 Entity, 승인 = Transition, 해석에 기대는 규칙 제거) |
+| `assignment/break-fix.md` | BREAK 2건의 BEFORE·FIX·AFTER, 한계, 리뷰 결과표 |
+| `assignment/reflection.md` | 회고 5문항 |
 
 ---
 
-## 규칙 하나
-
-검증 에러가 나면 **World를 고치세요. 검증기를 고치지 마세요.**
-그리고 BREAK에서 빈틈을 찾으면 **프롬프트가 아니라 World를 고치세요.**
-
----
-
-## 라이선스와 소유권
-
-Copyright © 2026 Josh Lee. All rights reserved.
-
-이 저장소는 **소스 공개(source-available)이지만 오픈소스가 아닙니다.**
-저장소의 원본 콘텐츠는 **Educational Use Only License**([`LICENSE`](LICENSE))에 따라
-**Agentic World Bootcamp 참여와 개인 교육용 숙제**에만 사용할 수 있습니다.
-상업적 사용, 프로덕션 사용, 경쟁 제품 개발, 제품 · 템플릿 · 프레임워크로의 재배포,
-제3자 제품이나 서비스에의 포함은 허용되지 않습니다.
-
-- **Josh Lee**가 이 저장소의 원본 코드 · 템플릿 · 문서 · 예시 및 기타 Superwork 저작물을 소유합니다.
-- **여러분**은 이 저장소를 이용해 직접 만든 숙제 결과물(여러분의 World · 답안 · 시나리오 · 증거)의 소유권을 가집니다.
-- 제출하면 부트캠프 운영과 리뷰를 위한 사용(검토 · 비공개 Studio로 가져와 검증 · 실행 · 분석 · 1:1 리뷰에서 표시와 논의)과
-  참가자 · 소속 회사 · 고객 · 개인을 합리적으로 특정할 수 없도록 익명화 · 일반화된 학습 내용의 활용에 동의하게 됩니다 — [제출 시 동의 사항](#5-제출-체크리스트), `LICENSE` 7조.
-- 숙제 결과물을 소유한다고 해서, 그 안에 쓰인 스타터의 템플릿 · 문서 · 예시 등 Superwork 저작물을
-  Educational Use 라이선스 밖에서 재사용하거나 재배포할 권리가 생기지는 않습니다.
-- npm 의존성은 원래의 라이선스를 따르며 이 라이선스로 바뀌지 않습니다
-  (`@superwork/world-spec`, `@superwork/cli` — MIT, `yaml` — ISC).
-
-GitHub 이용약관에 따른 공개 저장소의 열람 · Fork 권리는 그대로 유지되며, Fork도 이 라이선스를 따릅니다.
-자세한 내용: [`LICENSE`](LICENSE), [`NOTICE`](NOTICE)
-
-*Copyright © 2026 Josh Lee. All rights reserved. This repository is source-available, not open source. Its original content is
-licensed only for Agentic World Bootcamp participation and personal educational homework; participants own their original homework,
-which does not grant rights to the starter materials beyond that license; third-party MIT/ISC components keep their licenses —
-see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).*
+이 저장소는 [swit001/superwork-starter](https://github.com/swit001/superwork-starter)(Bootcamp Homework Edition)에서 시작했다. 스타터의 템플릿·문서·검증 도구는 원저작자의 것이며 [`LICENSE`](LICENSE)와 [`NOTICE`](NOTICE)를 따른다.
