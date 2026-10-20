@@ -5,6 +5,10 @@
 - mission: 법인 한 곳의 딜을 초회 미팅 준비부터 제안 설계안의 시스템 등록까지, 업무 사이 인계를 빠뜨리지 않고 진행한다.
 - 검증: `npm run validate` → Entity 5 · State 10 · Transition 11 · Constraint 12 · Warnings 0 · READY FOR STUDIO IMPORT ✓
 
+<img width="780" height="404" alt="image" src="https://github.com/user-attachments/assets/bff77548-322a-4085-a0a1-095202537090" />
+
+  
+
 ## 왜 딜 전체를 World로 만들었나
 
 원래 하네스는 업무 A\~E를 각각 독립된 프로젝트(업무별 명세·장부)로 만들고, 허브가 장부를 읽어 딜 단위로 묶어 보여 준다. 업무 안의 순서는 커널이 막지만, 업무 사이의 순서는 건을 여는 사람과 적재 프로그램에 맡겨져 있고 딜의 단계는 기록되지 않는 계산값이다. 이 World는 그 빈 곳을 다룬다. 딜을 주인공 상태기계로 두어 업무 사이 순서를 State 흐름으로 강제하고, 업무를 넘나드는 규칙(확정된 보고서 판을 근거로 설계했는가 등)을 Constraint로 선언했다. 대가로 업무 안의 세부 통제(자기 채점 금지, 주장 라벨, 검사한 판 묶기)는 이 World에서 다루지 않는다.
