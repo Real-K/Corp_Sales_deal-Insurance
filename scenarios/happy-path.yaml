@@ -1,16 +1,89 @@
-# 정상 시나리오 (RUN) — 여러분의 World로 바꾸세요.
-# 형식과 desk-check 방법: scenarios/README.md
-# 판정은 예측(PREDICTION)입니다. 리뷰에서 강사가 실제 Runtime 결과와 비교합니다.
+# 정상 시나리오 (RUN). 딜 D-1001이 opened에서 registered까지 (기준액 이하 경로, 9개 전이)
+# expect는 world.yaml·seed.yaml로 손으로 판정(desk-check)한 예측이다.
+# because: 상태 → 역할 → 전이의 guard 전부의 참·거짓 → 실패 목록.
+#   guard를 첫 실패에서 멈추든 끝까지 평가하든 판정과 실패 목록이 같도록 모든 guard 값을 적는다.
 scenario:
-  name: submit-happy-path
+  name: deal-happy-path
   kind: happy-path
-  record: R-1001                  # seed.yaml의 레코드 — status: draft 가 시작 상태
+  record: D-1001                  # 시작 상태 opened
   steps:
-    - input: "Submit request R-1001."
-      as: alex
-      transition: submit
+    - input: "Agent ag-01이 D-1001의 기업분석보고서 초안(AR-1001, 법인 CORP-001)을 낸다."
+      as: ag-01
+      transition: draft_analysis
       expect: ALLOW
       because: >
-        State: R-1001 is draft = submit.from.
-        Role: alex has employee = submit.principal_role.
-        Guard C1_requester_only: principal.id (alex) == request.requester (alex) → true.
+        상태: opened = draft_analysis.from ✓. 역할: ag-01의 역할 agent ✓.
+        guard 없음. 실패: 없음 → ALLOW.
+    - input: "담당 GFC gfc-01이 초회 준비를 확정한다."
+      as: gfc-01
+      transition: confirm_prep
+      expect: ALLOW
+      because: >
+        상태: analysis_drafted = confirm_prep.from ✓. 역할: gfc-01의 역할 gfc ✓.
+        C1_assigned_gfc_only: gfc-01 == deal.gfc (gfc-01) → 참.
+        C10_same_corp_analysis: deal.analysis.corp (CORP-001) == deal.corp (CORP-001) → 참.
+        실패: 없음 → ALLOW.
+    - input: "초회 미팅 뒤(meeting_held: true) 담당 GFC gfc-01이 후속 자료 수령을 확인한다."
+      as: gfc-01
+      transition: receive_followup
+      expect: ALLOW
+      because: >
+        상태: prep_confirmed = receive_followup.from ✓. 역할: gfc ✓.
+        C1: gfc-01 == gfc-01 → 참.
+        C2_meeting_held: deal.meeting_held (true) == true → 참.
+        실패: 없음 → ALLOW.
+    - input: "담당 GFC gfc-01이 1차 진단·배정안(ER-1001 v1)을 승인한다."
+      as: gfc-01
+      transition: approve_diagnosis
+      expect: ALLOW
+      because: >
+        상태: followup_received = approve_diagnosis.from ✓. 역할: gfc ✓.
+        C1: gfc-01 == gfc-01 → 참.
+        실패: 없음 → ALLOW.
+    - input: "시스템 sys-01이 전문가 배정 요청(ER-1001, 승인 판 1, 전문가 tax-01,law-01)을 발송한다."
+      as: sys-01
+      transition: send_expert_request
+      expect: ALLOW
+      because: >
+        상태: diagnosis_approved = send_expert_request.from ✓. 역할: sys-01의 역할 system ✓.
+        C3_send_approved_version: approved_version (1) == version (1) → 참.
+        C4_experts_not_empty: experts ("tax-01,law-01") != "" → 참.
+        실패: 없음 → ALLOW.
+        같은 딜 안의 재발송은 상태 흐름이 막는다 . send_expert_request.from은 diagnosis_approved뿐이고
+        그 상태로 되돌아오는 전이가 없다.
+    - input: "전문가 의견 2건(opinions_received 2 / opinions_expected 2)이 모두 온 뒤 Agent ag-01이 CEO 종합보고서 초안(CR-1001 v1)을 낸다."
+      as: ag-01
+      transition: draft_report
+      expect: ALLOW
+      because: >
+        상태: experts_requested = draft_report.from ✓. 역할: agent ✓.
+        C6_all_opinions_in: opinions_received (2) >= opinions_expected (2) → 참.
+        실패: 없음 → ALLOW.
+    - input: "담당 GFC gfc-01이 CEO 종합보고서(CR-1001, 충돌 0건)를 확정한다."
+      as: gfc-01
+      transition: confirm_report
+      expect: ALLOW
+      because: >
+        상태: report_drafted = confirm_report.from ✓. 역할: gfc ✓.
+        C1: gfc-01 == gfc-01 → 참.
+        C7_conflict_resolved: conflicts (0) == 0 → 참, resolution ("") != "" → 거짓 , or 식 전체는 참.
+        실패: 없음 → ALLOW.
+    - input: "담당 GFC gfc-01이 제안 설계안(PD-1001, 보고서 v1 근거, 연 환산 보험료 합계 80,000,000원)을 확정한다."
+      as: gfc-01
+      transition: confirm_proposal
+      expect: ALLOW
+      because: >
+        상태: report_confirmed = confirm_proposal.from ✓. 역할: gfc ✓.
+        C1: gfc-01 == gfc-01 → 참.
+        C8_uses_confirmed_report: proposal.report_version (1) == ceo_report.confirmed_version (1) → 참.
+        C9_premium_limit: 80,000,000 <= 100,000,000 → 참.
+        C13_report_unchanged_since_confirm: ceo_report.version (1) == confirmed_version (1) → 참.
+        실패: 없음 → ALLOW.
+        confirmed_version은 7단계 confirm_report가 써 넣은 값이 아니라 seed에 미리 넣은 값이다.
+    - input: "시스템 sys-01이 설계안 PD-1001을 설계 시스템에 등록한다."
+      as: sys-01
+      transition: register_proposal
+      expect: ALLOW
+      because: >
+        상태: proposal_confirmed = register_proposal.from ✓. 역할: system ✓.
+        guard 없음. 실패: 없음 → ALLOW.

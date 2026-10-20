@@ -1,63 +1,196 @@
-# ─────────────────────────────────────────────
-#  Your Superwork World
-#  이 파일이 여러분의 세계 전체입니다. 예시(구매 요청)를 여러분의 업무로 바꾸세요.
-#  결정의 이유는 assignment/ 에 기록하고,
-#  바꿀 때마다 반드시:  npm run validate
-#  이 파일은 저장소 루트에 두세요 (리뷰 Import 규약).
-# ─────────────────────────────────────────────
+# gfc-corporate-deal — 법인 딜(업무 A→E) World
 
 world:
-  id: my-world                     # 여러분의 World id (예: procurement-approval)
+  id: gfc-corporate-deal
   version: 0.1.0
-  spec: superwork.world/v1         # 언어 버전 — 수정하지 마세요
+  spec: superwork.world/v1
   mission: >
-    TODO: 이 세계가 완수하려는 일을 한 문장으로.
-    (예: Process purchase requests safely from submission to delivery.)
+    법인 한 곳의 딜을 초회 미팅 준비부터 제안 설계안의 시스템 등록까지,
+    업무 사이 인계를 빠뜨리지 않고 진행한다.
 
-# E — Entities: 무엇이 존재하고 추적되는가? (assignment/entity-decisions.md)
+# ── 값과 식의 해석 약속 ──────────────────────────
+#  · ref(X) 속성의 값은 seed.yaml에서 type이 X인 레코드의 id다.
+#    예: deal.ceo_report.version = Deal의 ceo_report가 가리키는 CEOReport 레코드의 version.
+#  · seed의 모든 레코드는 선언된 속성을 빠짐없이 갖는다. 없는 값·null은 없다.
+#  · int 판 번호는 1부터 센다. 0은 "아직 없음"(미승인·미확정)이다.
+#  · money의 단위는 원(KRW)이다.
+#  · 전이는 속성 값을 바꾸지 않는다. 각 값을 쓰는 주체는 속성 주석의 [ ]에 적는다.
+# ───────────────────────────────────────────────
+
+# E — Entities
 entities:
-  # 예시 — 여러분의 도메인으로 교체하세요
-  Request:
+  Deal:                            # 주인공: 법인 고객 하나와 담당 GFC의 딜
     attributes:
-      id: string
-      amount: money
-      requester: ref(Employee)
+      id: string                   # deal_id. 딜의 정체성은 corp·gfc 조합이 아니라 이 값이다 [딜을 열 때]
+      corp: string                 # 법인 ID [딜을 열 때]
+      gfc: string                  # 담당 GFC의 principal id [딜을 열 때]
+      dept_head: string            # 이 딜의 부서장 principal id. 기준액 초과 설계안의 결재자 [딜을 열 때]
+      meeting_held: bool           # 초회 미팅(Task-06)이 있었는가 [담당 GFC가 미팅 뒤 기록]
+      opinions_expected: int       # 받아야 할 전문가 의견 수 = 배정 전문가 수 [C 배정 승인 때]
+      opinions_received: int       # 받은 전문가 의견 수 [의견을 받을 때마다]
+      analysis: ref(AnalysisReport)
+      expert_request: ref(ExpertRequest)
+      ceo_report: ref(CEOReport)
+      proposal: ref(ProposalDesign)
       status: state
-    owned_state: true              # 상태기계를 갖는 엔티티는 하나로 시작하세요
-  Employee:
+    owned_state: true
+  AnalysisReport:                  # A 기업분석보고서
     attributes:
       id: string
-      name: string
-      manager: ref(Employee)
+      corp: string                 # 분석한 법인 ID. C10이 딜의 corp와 대조한다 [Agent 초안]
+      version: int                 # 보고서 판. 규칙은 읽지 않지만 산출물 Entity의 기준(결정 2)이라 둔다 [Agent 초안]
+  ExpertRequest:                   # C 1차 진단·배정안 + 배정 요청 발송
+    attributes:
+      id: string
+      version: int                 # 1차 진단·배정안의 판 [Agent 초안]
+      approved_version: int        # 담당 GFC가 승인한 판, 0 = 미승인 [승인 때]
+      experts: string              # 배정 전문가 ID를 쉼표로 이은 값, 빈 문자열 = 배정 없음 [Agent 초안]
+  CEOReport:                       # D CEO 종합보고서
+    attributes:
+      id: string
+      version: int                 # 보고서의 지금 판 [Agent 초안]
+      confirmed_version: int       # 담당 GFC가 확정한 판, 0 = 미확정 [확정 때]
+      conflicts: int               # 전문가 의견 사이 충돌 항목 수 [의견 재취합 때]
+      resolution: string           # 충돌 조정 근거, 빈 문자열 = 근거 없음 [담당 GFC가 확정 때]
+  ProposalDesign:                  # E 제안 설계안
+    attributes:
+      id: string
+      report_version: int          # 설계안이 근거로 한 CEO 보고서 판 [Agent 초안]
+      premium_total: money         # 설계안의 연 환산 보험료 합계(원) [보험료 산출 프로그램]
 
-# S — States: 주인공 Entity가 흐름 속 어디에 있는가?
+# S — States (주인공 Deal)
 states:
-  Request:
-    - draft
-    - submitted
-    # TODO: 여러분의 상태들
+  Deal:
+    - opened
+    - analysis_drafted             # A
+    - prep_confirmed               # A
+    - followup_received            # B
+    - diagnosis_approved           # C
+    - experts_requested            # C
+    - report_drafted               # D
+    - report_confirmed             # D
+    - proposal_confirmed           # E
+    - registered                   # E
 
-terminal_states: []                # 최종 사실 (예: [closed, rejected])
+terminal_states: [registered]
 
-# T — Transitions: 무엇이 상태를 바꾸고, 누가 할 수 있는가?
+# T — Transitions
 transitions:
-  submit:
-    from: draft
-    to: submitted
-    principal_role: employee
-    guards: [C1_requester_only]
+  draft_analysis:                  # A 기업분석보고서 초안
+    from: opened
+    to: analysis_drafted
+    principal_role: agent
+    guards: []
+  confirm_prep:                    # A 담당 GFC 확정
+    from: analysis_drafted
+    to: prep_confirmed
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only, C10_same_corp_analysis]
+  receive_followup:                # B 수령 확인 (초회 미팅 뒤)
+    from: prep_confirmed
+    to: followup_received
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only, C2_meeting_held]
+  approve_diagnosis:               # C 1차 진단·배정안 승인
+    from: followup_received
+    to: diagnosis_approved
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only]
+  send_expert_request:             # C 배정 요청 발송. 외부 효과, 되돌릴 수 없음
+    from: diagnosis_approved
+    to: experts_requested
+    principal_role: system
+    guards: [C3_send_approved_version, C4_experts_not_empty]
+    effects: [expert_request_sent]
+  draft_report:                    # D CEO 종합보고서 초안
+    from: experts_requested
+    to: report_drafted
+    principal_role: agent
+    guards: [C6_all_opinions_in]
+  confirm_report:                  # D 충돌 조정·확정
+    from: report_drafted
+    to: report_confirmed
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only, C7_conflict_resolved]
+  return_report:                   # D 반려. 보고서를 다시 작성한다
+    from: report_drafted
+    to: experts_requested
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only]
+  confirm_proposal:                # E 설계안 확정 (기준액 이하)
+    from: report_confirmed
+    to: proposal_confirmed
+    principal_role: gfc
+    guards: [C1_assigned_gfc_only, C8_uses_confirmed_report, C9_premium_limit, C13_report_unchanged_since_confirm]
+  approve_proposal_over_limit:     # E 기준액 초과 시 부서장 결재
+    from: report_confirmed
+    to: proposal_confirmed
+    principal_role: dept_head
+    guards: [C8_uses_confirmed_report, C11_over_limit_only, C12_deal_dept_head_only, C13_report_unchanged_since_confirm]
+  register_proposal:               # E 설계 시스템 등록. 외부 효과, 되돌릴 수 있음
+    from: proposal_confirmed
+    to: registered
+    principal_role: system
+    guards: []
+    effects: [proposal_registered]
 
-# C — Constraints: 무엇이 절대 허용되면 안 되는가?
+# C — Constraints
 constraints:
-  C1_requester_only:
-    expr: principal.id == request.requester
-    message: Only the requester can submit.
+  C1_assigned_gfc_only:
+    expr: principal.id == deal.gfc
+    message: 그 딜의 담당 GFC만 확정·승인·반려할 수 있다.
+  C2_meeting_held:
+    expr: deal.meeting_held == true
+    message: 초회 미팅이 있었다는 기록 없이 후속 단계를 열 수 없다.
+  C3_send_approved_version:
+    expr: deal.expert_request.approved_version == deal.expert_request.version
+    message: 승인한 판과 지금 배정안의 판이 다르다. 다시 승인받아야 한다.
+  C4_experts_not_empty:
+    expr: deal.expert_request.experts != ""
+    message: 배정 전문가가 비어 있으면 요청을 보낼 수 없다.
+  C6_all_opinions_in:
+    expr: deal.opinions_received >= deal.opinions_expected
+    message: 받아야 할 전문가 의견이 다 오지 않았다.
+  C7_conflict_resolved:
+    expr: deal.ceo_report.conflicts == 0 or deal.ceo_report.resolution != ""
+    message: 의견 충돌이 있으면 조정 근거를 남겨야 확정할 수 있다.
+  C8_uses_confirmed_report:
+    expr: deal.proposal.report_version == deal.ceo_report.confirmed_version
+    message: 설계안이 확정된 CEO 보고서 판을 근거로 하지 않는다.
+  C9_premium_limit:
+    expr: deal.proposal.premium_total <= 100000000
+    message: 연 환산 보험료 합계가 기준액(예시 1억 원)을 넘으면 부서장 결재가 필요하다.
+    on_fail_hint: approve_proposal_over_limit
+  C10_same_corp_analysis:
+    expr: deal.analysis.corp == deal.corp
+    message: 이 딜의 법인을 분석한 보고서가 아니다.
+  C11_over_limit_only:
+    expr: deal.proposal.premium_total > 100000000
+    message: 연 환산 보험료 합계가 기준액(예시 1억 원) 이하인 설계안은 담당 GFC가 확정한다.
+  C12_deal_dept_head_only:
+    expr: principal.id == deal.dept_head
+    message: 그 딜의 부서장만 기준액 초과 설계안을 결재할 수 있다.
+  C13_report_unchanged_since_confirm:
+    expr: deal.ceo_report.version == deal.ceo_report.confirmed_version
+    message: CEO 보고서가 확정 뒤 바뀌었다. 다시 확정받아야 한다.
 
-# 행위자 — 시나리오의 `as`는 여기의 id를 씁니다
+# 행위자 (예시 ID). 시나리오의 as는 이 id를 쓴다.
 principals:
-  - id: alex
-    name: Alex
-    roles: [employee]
-  - id: blake
-    name: Blake
-    roles: [employee]
+  - id: gfc-01
+    name: 담당 GFC (예시)
+    roles: [gfc]
+  - id: gfc-02
+    name: 다른 GFC (예시)
+    roles: [gfc]
+  - id: head-01
+    name: 부서장 (예시)
+    roles: [dept_head]
+  - id: head-02
+    name: 다른 부서장 (예시)
+    roles: [dept_head]
+  - id: ag-01
+    name: Agent (예시)
+    roles: [agent]
+  - id: sys-01
+    name: 발송·등록 시스템 (예시)
+    roles: [system]

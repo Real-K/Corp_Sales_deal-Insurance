@@ -1,0 +1,101 @@
+SUPERWORK WORLD SUMMARY
+
+World          gfc-corporate-deal
+Version        0.1.0
+Spec           superwork.world/v1
+
+Entities       5
+States         10
+Transitions    11
+Constraints    12
+
+Schema         PASS
+References     PASS
+Transitions    PASS
+Constraints    PASS
+
+Warnings       0
+
+READY FOR STUDIO IMPORT ✓
+
+
+--- npm run validate (D-2004 seed · adversarial-other-dept-head 추가 후) ---
+SUPERWORK VALIDATION
+
+Your world has no issues. ✓
+
+--- npm run validate --summary (두 번째 FIX 후: CEOReport.confirmed_version · C8 식 변경 · C13 추가) ---
+SUPERWORK WORLD SUMMARY
+
+World          gfc-corporate-deal
+Version        0.1.0
+Spec           superwork.world/v1
+
+Entities       5
+States         10
+Transitions    11
+Constraints    13
+
+Schema         PASS
+References     PASS
+Transitions    PASS
+Constraints    PASS
+
+Warnings       0
+
+READY FOR STUDIO IMPORT ✓
+
+
+--- npm run validate (D-2005 AFTER · because 다섯 곳 수정 후) ---
+SUPERWORK VALIDATION
+
+Your world has no issues. ✓
+
+--- npm run validate (D-2006 seed · adversarial-report-changed-after-confirm 추가 후) ---
+SUPERWORK VALIDATION
+
+Your world has no issues. ✓
+
+--- npm run validate --summary (판정 결정성 정리 후: C5 삭제 · 속성 정의 · seed 완비) ---
+SUPERWORK WORLD SUMMARY
+
+World          gfc-corporate-deal
+Version        0.1.0
+Spec           superwork.world/v1
+
+Entities       5
+States         10
+Transitions    11
+Constraints    12
+
+Schema         PASS
+References     PASS
+Transitions    PASS
+Constraints    PASS
+
+Warnings       0
+
+READY FOR STUDIO IMPORT ✓
+
+
+--- npm run validate --summary (주석·문체 정리 후) ---
+SUPERWORK WORLD SUMMARY
+
+World          gfc-corporate-deal
+Version        0.1.0
+Spec           superwork.world/v1
+
+Entities       5
+States         10
+Transitions    11
+Constraints    12
+
+Schema         PASS
+References     PASS
+Transitions    PASS
+Constraints    PASS
+
+Warnings       0
+
+READY FOR STUDIO IMPORT ✓
+

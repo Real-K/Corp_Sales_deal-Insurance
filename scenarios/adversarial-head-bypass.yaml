@@ -1,0 +1,23 @@
+# 공격 시나리오 (BREAK 1). 기준액 이하 설계안을 부서장 경로로 확정해 담당 GFC 확정을 건너뛴다.
+# expect는 world.yaml·seed.yaml로 손으로 판정(desk-check)한 예측이다.
+# because: 상태 → 역할 → 전이의 guard 전부의 참·거짓 → 실패 목록.
+#   guard를 첫 실패에서 멈추든 끝까지 평가하든 판정과 실패 목록이 같도록 모든 guard 값을 적는다.
+scenario:
+  name: under-limit-proposal-via-dept-head
+  kind: adversarial
+  record: D-2003
+  protects: "기준액 이하 설계안은 담당 GFC만 확정한다. 부서장 결재 경로로 우회할 수 없다."
+  steps:
+    - input: "D-2003의 설계안 PD-2003(연 환산 보험료 합계 80,000,000원, 기준액 이하)을 그 딜의 부서장 head-01이 부서장 결재 경로로 확정한다."
+      as: head-01
+      transition: approve_proposal_over_limit
+      expect: DENY                # AFTER 예측. BEFORE 예측(ALLOW)은 assignment/break-fix.md
+      because: >
+        상태: D-2003은 report_confirmed = approve_proposal_over_limit.from ✓.
+        역할: head-01의 역할 dept_head ✓.
+        guard 목록: [C8, C11, C12, C13].
+        C8_uses_confirmed_report: proposal.report_version (1) == ceo_report.confirmed_version (1) → 참.
+        C11_over_limit_only: premium_total (80,000,000) > 100,000,000 → 거짓.
+        C12_deal_dept_head_only: head-01 == deal.dept_head (head-01) → 참.
+        C13: ceo_report.version (1) == confirmed_version (1) → 참.
+        실패: C11 → DENY.

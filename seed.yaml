@@ -1,11 +1,282 @@
-# 시나리오의 시작 상태가 되는 샘플 레코드.
-# scenarios/*.yaml 의 `record:` 가 여기의 id를 가리키고, 그 레코드의 status가 시작 상태입니다.
-# 다른 시작 상태가 필요하면 레코드를 추가하세요 (status는 world.yaml에 선언된 state여야 합니다).
-# 리뷰에서 강사가 이 레코드로 여러분의 시나리오를 실제 Runtime에서 실행합니다.
+# gfc-corporate-deal 시나리오의 시작 레코드
+#
+# 약속 (world.yaml 머리말 "값과 식의 해석 약속"과 같다)
+#  · 모든 값은 예시다. 실제 법인·담당자·금액이 아니다. money는 원(KRW).
+#  · 모든 레코드는 world.yaml에 선언된 속성을 빠짐없이 갖는다. 없는 값·null은 없다.
+#  · ref 값(analysis·expert_request·ceo_report·proposal)은 아래 다른 type 레코드의 id다.
+#  · 딜마다 산출물 레코드 4개(AR·ER·CR·PD-<번호>)를 따로 가진다.
+#  · 전이는 값을 바꾸지 않는다. 각 딜에는 시나리오의 모든 단계가 평가할 값을 처음부터 넣는다.
 records:
-  - type: Request
-    id: R-1001
-    status: draft
+
+  # ── D-1001: 정상 시나리오. opened → registered (기준액 이하 경로, 9개 전이) ──
+  - type: Deal
+    id: D-1001
+    status: opened
     attributes:
-      amount: 1200
-      requester: alex
+      corp: CORP-001
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-1001
+      expert_request: ER-1001
+      ceo_report: CR-1001
+      proposal: PD-1001
+  - type: AnalysisReport
+    id: AR-1001
+    attributes:
+      corp: CORP-001
+      version: 1
+  - type: ExpertRequest
+    id: ER-1001
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-1001
+    attributes:
+      version: 1
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-1001
+    attributes:
+      report_version: 1
+      premium_total: 80000000
+
+  # ── D-2001: 공격. CEO 보고서가 아직 초안(미확정)인데 설계안 확정 ──
+  - type: Deal
+    id: D-2001
+    status: report_drafted
+    attributes:
+      corp: CORP-002
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2001
+      expert_request: ER-2001
+      ceo_report: CR-2001
+      proposal: PD-2001
+  - type: AnalysisReport
+    id: AR-2001
+    attributes:
+      corp: CORP-002
+      version: 1
+  - type: ExpertRequest
+    id: ER-2001
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2001
+    attributes:
+      version: 1
+      confirmed_version: 0                # 0 = 미확정
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2001
+    attributes:
+      report_version: 1
+      premium_total: 80000000
+
+  # ── D-2002: 공격. 보고서는 v1로 확정, 설계안은 확정되지 않은 v2를 근거로 함 ──
+  - type: Deal
+    id: D-2002
+    status: report_confirmed
+    attributes:
+      corp: CORP-003
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2002
+      expert_request: ER-2002
+      ceo_report: CR-2002
+      proposal: PD-2002
+  - type: AnalysisReport
+    id: AR-2002
+    attributes:
+      corp: CORP-003
+      version: 1
+  - type: ExpertRequest
+    id: ER-2002
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2002
+    attributes:
+      version: 1
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2002
+    attributes:
+      report_version: 2
+      premium_total: 80000000
+
+  # ── D-2003: 공격. 기준액 이하(8천만 원) 설계안을 부서장 경로로 확정 ──
+  - type: Deal
+    id: D-2003
+    status: report_confirmed
+    attributes:
+      corp: CORP-004
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2003
+      expert_request: ER-2003
+      ceo_report: CR-2003
+      proposal: PD-2003
+  - type: AnalysisReport
+    id: AR-2003
+    attributes:
+      corp: CORP-004
+      version: 1
+  - type: ExpertRequest
+    id: ER-2003
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2003
+    attributes:
+      version: 1
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2003
+    attributes:
+      report_version: 1
+      premium_total: 80000000
+
+  # ── D-2004: 공격. 기준액 초과(1억 5천만 원) 설계안을 다른 부서장이 결재 ──
+  - type: Deal
+    id: D-2004
+    status: report_confirmed
+    attributes:
+      corp: CORP-005
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2004
+      expert_request: ER-2004
+      ceo_report: CR-2004
+      proposal: PD-2004
+  - type: AnalysisReport
+    id: AR-2004
+    attributes:
+      corp: CORP-005
+      version: 1
+  - type: ExpertRequest
+    id: ER-2004
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2004
+    attributes:
+      version: 1
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2004
+    attributes:
+      report_version: 1
+      premium_total: 150000000
+
+  # ── D-2005: 공격. 보고서를 v1로 확정한 뒤 v2로 고침(재확정 없음), 설계안은 v2를 근거로 함 ──
+  - type: Deal
+    id: D-2005
+    status: report_confirmed
+    attributes:
+      corp: CORP-006
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2005
+      expert_request: ER-2005
+      ceo_report: CR-2005
+      proposal: PD-2005
+  - type: AnalysisReport
+    id: AR-2005
+    attributes:
+      corp: CORP-006
+      version: 1
+  - type: ExpertRequest
+    id: ER-2005
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2005
+    attributes:
+      version: 2                   # 확정한 판(1) 뒤에 바뀐 판
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2005
+    attributes:
+      report_version: 2
+      premium_total: 80000000
+
+  # ── D-2006: 공격. 설계안은 확정본 v1을 근거로 했지만, 확정 뒤 보고서가 v2로 바뀜 (C13 단독) ──
+  - type: Deal
+    id: D-2006
+    status: report_confirmed
+    attributes:
+      corp: CORP-007
+      gfc: gfc-01
+      dept_head: head-01
+      meeting_held: true
+      opinions_expected: 2
+      opinions_received: 2
+      analysis: AR-2006
+      expert_request: ER-2006
+      ceo_report: CR-2006
+      proposal: PD-2006
+  - type: AnalysisReport
+    id: AR-2006
+    attributes:
+      corp: CORP-007
+      version: 1
+  - type: ExpertRequest
+    id: ER-2006
+    attributes:
+      version: 1
+      approved_version: 1
+      experts: "tax-01,law-01"
+  - type: CEOReport
+    id: CR-2006
+    attributes:
+      version: 2                   # 확정한 판(1) 뒤에 바뀐 판
+      confirmed_version: 1
+      conflicts: 0
+      resolution: ""
+  - type: ProposalDesign
+    id: PD-2006
+    attributes:
+      report_version: 1
+      premium_total: 80000000

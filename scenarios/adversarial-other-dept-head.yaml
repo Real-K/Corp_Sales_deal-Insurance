@@ -1,0 +1,30 @@
+# 공격 시나리오 (BREAK 1 · 추가 확인). 기준액 초과 설계안을 그 딜의 부서장이 아닌 사람이 결재한다.
+# expect는 world.yaml·seed.yaml로 손으로 판정(desk-check)한 예측이다.
+# because: 상태 → 역할 → 전이의 guard 전부의 참·거짓 → 실패 목록.
+#   guard를 첫 실패에서 멈추든 끝까지 평가하든 판정과 실패 목록이 같도록 모든 guard 값을 적는다.
+scenario:
+  name: over-limit-proposal-by-other-dept-head
+  kind: adversarial
+  record: D-2004
+  protects: "기준액 초과 설계안은 그 딜의 부서장만 결재한다."
+  steps:
+    - input: "D-2004의 설계안 PD-2004(연 환산 보험료 합계 150,000,000원, 기준액 초과)를 다른 부서장 head-02가 결재한다. 이 딜의 부서장은 head-01이다."
+      as: head-02
+      transition: approve_proposal_over_limit
+      expect: DENY
+      because: >
+        상태: report_confirmed = approve_proposal_over_limit.from ✓. 역할: head-02의 역할 dept_head ✓.
+        C8: proposal.report_version (1) == ceo_report.confirmed_version (1) → 참.
+        C11: premium_total (150,000,000) > 100,000,000 → 참.
+        C12_deal_dept_head_only: head-02 == deal.dept_head (head-01) → 거짓.
+        C13: ceo_report.version (1) == confirmed_version (1) → 참.
+        실패: C12 → DENY.
+    - input: "같은 설계안 PD-2004를 그 딜의 부서장 head-01이 결재한다."
+      as: head-01
+      transition: approve_proposal_over_limit
+      expect: ALLOW
+      because: >
+        1단계가 DENY라 상태는 report_confirmed 그대로다.
+        상태 ✓. 역할: head-01의 역할 dept_head ✓.
+        C8 → 참 · C11 → 참 · C12: head-01 == deal.dept_head (head-01) → 참 · C13 → 참.
+        실패: 없음 → ALLOW. FIX가 정상 결재 경로까지 막지 않았는지 확인하는 단계다.
